@@ -4,7 +4,7 @@ To jest w 100% autorski projekt typu Full-Stack, stworzony jako część mojego 
 
 Projekt implementuje logikę biznesową dla prostego systemu rezerwacji wizyt w salonie fryzjerskim.
 
-Link do Live Demo: [Wstaw tutaj swój link z hostingu, np. 000webhost]
+Link do Live Demo: [https://frniemynski-tech.github.io/php-appointment-scheduler/]
 
 Zastosowane Technologie
 
