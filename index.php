@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moje Portfolio: SalonManager (Full-Stack)</title>
+    <!-- Ładujemy Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Ładujemy ikony Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Prosty dark mode dla tła */
+        body {
+            background-color: #111827; /* gray-900 */
+            color: #f3f4f6; /* gray-100 */
+            font-family: 'Inter', sans-serif;
+        }
+        /* Ustawienia dla paska przewijania */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        /* Poprawka dla selektorów daty/godziny w dark mode */
+        input[type="date"]::-webkit-calendar-picker-indicator,
+        input[type="time"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            opacity: 0.7;
+            cursor: pointer;
+        }
+        /* Animacja dla Toast */
+        .toast-enter {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+        .toast-exit {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+    </style>
+    <!-- Czcionka Inter (dla Tailwind) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="antialiased">
+
+    <!-- Kontener na powiadomienia (Toast) -->
+    <div id="toast" class="fixed top-5 right-5 z-50 p-4 rounded-md shadow-lg text-white max-w-sm transition-all duration-300 transform translate-x-[120%] opacity-0">
+        <span id="toast-message"></span>
+    </div>
+
+    <!-- Moduł Potwierdzenia (Popup) -->
+    <div id="confirmationModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm transition-opacity duration-200">
+        <div id="modalPanel" class="bg-gray-800 p-6 rounded-lg shadow-xl max-w-sm w-full mx-4 border border-gray-700 transition-transform transform scale-95">
+            <h3 class="text-lg font-bold text-white">Potwierdzenie</h3>
+            <p class="text-gray-400 mt-2 mb-6">Czy na pewno chcesz anulować tę wizytę?</p>
+            <div class="flex justify-end gap-3">
+                <button id="modalCancelBtn" class="px-4 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition-colors">
+                    Nie, zostaw
+                </button>
+                <button id="modalConfirmBtn" data-id="" class="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors">
+                    Tak, anuluj
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Główny kontener aplikacji -->
+    <div class="container mx-auto max-w-6xl p-4 md:p-8">
+        
+        <!-- Nagłówek projektu portfolio -->
+        <header class="mb-8 p-4 bg-gray-800 rounded-lg border border-gray-700 shadow-lg">
+            <h1 class="text-3xl font-bold text-purple-400 flex items-center gap-3">
+                <i data-lucide="scissors"></i>
+                Projekt Portfolio: SalonManager
+            </h1>
+            <p class="mt-2 text-gray-400">
+                W 100% autorski projekt (Full-Stack). Backend w czystym PHP/PDO z walidacją, połączony z autorskim frontendem (HTML/Tailwind/JS).
+            </p>
+        </header>
+
+        <!-- Układ siatki -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Kolumna z formularzem -->
+            <div class="lg:col-span-1">
+                <div class="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700 sticky top-8">
+                    <h3 class="text-xl font-bold mb-6 text-white">Zarezerwuj wizytę</h3>
+                    <!-- Formularz łączy się z naszym backendem -->
+                    <form id="addAppointmentForm" class="space-y-5">
+                        
+                        <div>
+                            <label for="visit_date" class="block text-sm font-semibold text-gray-400 mb-1">Data wizyty</label>
+                            <input type="date" id="visit_date" name="visit_date" required class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500 outline-none">
+                        </div>
+
+                        <div>
+                            <label for="visit_time" class="block text-sm font-semibold text-gray-400 mb-1">Godzina wizyty</label>
+                            <input type="time" id="visit_time" name="visit_time" required class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500 outline-none">
+                        </div>
+
+                        <div>
+                            <label for="stylist" class="block text-sm font-semibold text-gray-400 mb-1">Stylista</label>
+                            <input type="text" id="stylist" name="stylist" placeholder="np. Anna" required class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500 outline-none">
+                        </div>
+
+                        <div>
+                            <label for="client_name" class="block text-sm font-semibold text-gray-400 mb-1">Imię Klienta</label>
+                            <input type="text" id="client_name" name="client_name" placeholder="np. Jan Kowalski" required class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500 outline-none">
+                        </div>
+                        
+                        <button type="submit" class="w-full bg-purple-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all transform hover:-translate-y-0.5 !mt-8">
+                            <span id="formButtonText">Zarezerwuj</span>
+                            <i id="formLoader" data-lucide="loader" class="animate-spin h-5 w-5 mx-auto hidden"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Kolumna z listą wizyt -->
+            <div class="lg:col-span-2">
+                <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 min-h-[400px]">
+                    <h3 class="text-xl font-bold mb-6 text-white">Zaplanowane wizyty</h3>
+                    
+                    <!-- Wskaźnik ładowania listy -->
+                    <div id="listLoader" class="flex justify-center items-center py-10">
+                        <i data-lucide="loader" class="animate-spin h-8 w-8 text-purple-400"></i>
+                        <span class="ml-3 text-gray-400 font-medium">Ładowanie danych z API...</span>
+                    </div>
+
+                    <!-- Kontener na listę wizyt -->
+                    <ul id="appointmentsList" class="space-y-4 hidden">
+                        <!-- Elementy listy będą dodawane dynamicznie przez JS -->
+                    </ul>
+
+                    <!-- Komunikat, gdy lista jest pusta -->
+                    <p id="emptyState" class="text-center text-gray-500 py-10 hidden">
+                        Brak zaplanowanych wizyt. Zarezerwuj pierwszą, korzystając z formularza.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Logika JavaScript po stronie klienta (100% autorska) -->
+    <script>
+        // Inicjalizacja ikon Lucide
+        lucide.createIcons();
+
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // === SELEKTORY DOM ===
+            const addForm = document.getElementById('addAppointmentForm');
+            const appointmentsList = document.getElementById('appointmentsList');
+            const listLoader = document.getElementById('listLoader');
+            const emptyState = document.getElementById('emptyState');
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            const modal = document.getElementById('confirmationModal');
+            const modalPanel = document.getElementById('modalPanel');
+            const modalCancelBtn = document.getElementById('modalCancelBtn');
+            const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+            const formButtonText = document.getElementById('formButtonText');
+            const formLoader = document.getElementById('formLoader');
+
+            // === KONFIGURACJA API ===
+            // Używamy naszego pliku api.php
+            const API_BASE_URL = 'api.php'; 
+
+            /**
+             * Wyświetla powiadomienie (toast)
+             * @param {string} message - Wiadomość do wyświetlenia
+             * @param {string} type - 'success' (fioletowy) lub 'error' (czerwony)
+             */
+            function showToast(message, type = 'success') {
+                toastMessage.textContent = message;
+                toast.classList.remove('bg-purple-600', 'bg-red-600');
+                toast.classList.add(type === 'success' ? 'bg-purple-600' : 'bg-red-600');
+                
+                // Pokaż toast
+                toast.classList.remove('opacity-0', 'translate-x-[120%]', 'toast-exit');
+                toast.classList.add('opacity-100', 'translate-x-0', 'toast-enter');
+                
+                // Ukryj po 3 sekundach
+                setTimeout(() => {
+                    toast.classList.remove('opacity-100', 'translate-x-0', 'toast-enter');
+                    toast.classList.add('opacity-0', 'translate-x-[120%]', 'toast-exit');
+                }, 3000);
+            }
+
+            /**
+             * Przełącza widoczność wskaźnika ładowania listy
+             */
+            function setListLoading(isLoading) {
+                listLoader.classList.toggle('hidden', !isLoading);
+                appointmentsList.classList.toggle('hidden', isLoading);
+                emptyState.classList.add('hidden'); 
+            }
+
+            /**
+             * Przełącza stan ładowania przycisku formularza
+             */
+            function setFormLoading(isLoading) {
+                formButtonText.classList.toggle('hidden', isLoading);
+                formLoader.classList.toggle('hidden', !isLoading);
+                addForm.querySelector('button[type="submit"]').disabled = isLoading;
+            }
+
+            /**
+             * Pokazuje lub ukrywa modal potwierdzenia
+             */
+            function showModal(show = true) {
+                if (show) {
+                    modal.classList.remove('hidden');
+                    setTimeout(() => {
+                         modal.classList.remove('opacity-0');
+                         modalPanel.classList.remove('scale-95');
+                    }, 10); // Małe opóźnienie dla animacji CSS
+                } else {
+                    modal.classList.add('opacity-0');
+                    modalPanel.classList.add('scale-95');
+                    setTimeout(() => modal.classList.add('hidden'), 200);
+                }
+            }
+
+            /**
+             * Renderuje pojedynczy element listy wizyt
+             * @param {object} app - Obiekt wizyty z API
+             */
+            function renderAppointmentItem(app) {
+                const li = document.createElement('li');
+                li.className = 'flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-lg bg-gray-900 border border-gray-700 shadow-sm hover:bg-gray-800 transition-colors duration-200';
+                li.dataset.id = app.id; 
+
+                // Formatowanie daty i czasu
+                const displayDate = new Date(app.visit_date + 'T00:00:00').toLocaleDateString('pl-PL', { year: 'numeric', month: 'long', day: 'numeric' });
+                const displayTime = app.visit_time ? app.visit_time.substring(0, 5) : 'Brak';
+
+                li.innerHTML = `
+                    <div class="flex-1 mb-3 sm:mb-0 pr-4">
+                        <div class="flex items-center gap-3">
+                            <span class="font-bold text-purple-400 text-lg">${displayTime}</span>
+                            <span class="text-white font-semibold">${displayDate}</span>
+                        </div>
+                        <div class="text-sm text-gray-400 mt-2 space-y-1">
+                            <p><span class="font-medium text-gray-500 w-20 inline-block">Stylista:</span> ${app.stylist}</p>
+                            <p><span class="font-medium text-gray-500 w-20 inline-block">Klient:</span> ${app.client_name}</p>
+                        </div>
+                    </div>
+                    <button data-id="${app.id}" class="cancel-btn text-sm font-medium text-red-400 hover:text-red-300 bg-red-900/50 hover:bg-red-900/80 px-3 py-2 rounded-md transition-colors w-full sm:w-auto flex-shrink-0">
+                        Anuluj wizytę
+                    </button>
+                `;
+                
+                // Dodajemy nasłuchiwacz do przycisku "Anuluj"
+                li.querySelector('.cancel-btn').addEventListener('click', handleCancelClick);
+                
+                // Dodajemy na początek listy (nowsze na górze)
+                appointmentsList.prepend(li);
+            }
+
+            /**
+             * Pobiera i wyświetla listę wizyt z serwera
+             */
+            async function fetchAppointments() {
+                setListLoading(true);
+                appointmentsList.innerHTML = ''; 
+
+                try {
+                    // Używamy naszego nowego endpointu API
+                    const response = await fetch(`${API_BASE_URL}?action=get_appointments`);
+                    if (!response.ok) throw new Error(`Błąd serwera (GET): ${response.statusText}. Sprawdź plik API.`);
+                    
+                    const appointments = await response.json();
+
+                    if (appointments.length === 0) {
+                        emptyState.classList.remove('hidden');
+                    } else {
+                        emptyState.classList.add('hidden');
+                        // API już sortuje, ale możemy posortować ponownie dla pewności
+                        appointments.sort((a, b) => (a.visit_date + a.visit_time).localeCompare(b.visit_date + b.visit_time));
+                        appointments.forEach(renderAppointmentItem);
+                    }
+                } catch (error) {
+                    console.error('Błąd podczas pobierania wizyt:', error);
+                    showToast(error.message, 'error');
+                    emptyState.classList.remove('hidden');
+                } finally {
+                    setListLoading(false);
+                }
+            }
+
+            /**
+             * Obsługuje wysłanie formularza dodawania nowej wizyty
+             */
+            async function handleAddAppointment(e) {
+                e.preventDefault(); 
+                setFormLoading(true);
+                
+                const formData = new FormData(addForm);
+                // Używamy kluczy pasujących do formularza 'salon_rezerwacje'
+                const appData = {
+                    visit_date: formData.get('visit_date'),
+                    visit_time: formData.get('visit_time'),
+                    stylist: formData.get('stylist'),
+                    client_name: formData.get('client_name')
+                };
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}?action=add_appointment`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(appData),
+                    });
+
+                    const result = await response.json();
+                    
+                    // Nasze API (funkcja send_json) wysyła kod 422 przy błędzie walidacji
+                    if (!response.ok) {
+                        // Backend (api.php) wysyła 'message', więc go odczytujemy
+                        throw new Error(result.message || 'Wystąpił nieznany błąd serwera.');
+                    }
+
+                    // Sukces! Nasze API wysyła obiekt 'data' z nową wizytą
+                    renderAppointmentItem(result.data); 
+                    addForm.reset(); 
+                    emptyState.classList.add('hidden'); 
+                    showToast('Pomyślnie zarezerwowano wizytę!', 'success');
+
+                } catch (error) {
+                    console.error('Błąd podczas dodawania wizyty:', error);
+                    showToast(error.message, 'error');
+                } finally {
+                    setFormLoading(false);
+                }
+            }
+
+            /**
+             * Wykonuje logikę usunięcia po potwierdzeniu w module
+             */
+            async function performDeletion(appointmentId) {
+                const appElement = document.querySelector(`li[data-id="${appointmentId}"]`);
+                if (!appElement) return;
+
+                try {
+                    // Używamy naszego nowego endpointu API
+                    const response = await fetch(`${API_BASE_URL}?action=delete_appointment&id=${appointmentId}`, {
+                        method: 'DELETE',
+                    });
+
+                    const result = await response.json();
+                    if (!response.ok) {
+                        throw new Error(result.message || 'Nie udało się anulować wizyty.');
+                    }
+
+                    // Animacja usuwania
+                    appElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease, max-height 0.3s ease';
+                    appElement.style.opacity = '0';
+                    appElement.style.transform = 'translateX(-20px)';
+                    appElement.style.maxHeight = '0px';
+                    appElement.style.padding = '0px';
+                    appElement.style.margin = '0px';
+                    
+                    setTimeout(() => {
+                        appElement.remove();
+                        if (appointmentsList.children.length === 0) {
+                            emptyState.classList.remove('hidden');
+                        }
+                    }, 300);
+
+                    showToast(result.message, 'success'); // Nasze API wysyła 'message'
+
+                } catch (error) {
+                    console.error('Błąd podczas anulowania wizyty:', error);
+                    showToast(error.message, 'error');
+                }
+            }
+
+            /**
+             * Obsługuje kliknięcie przycisku "Anuluj" - tylko pokazuje modal
+             */
+            function handleCancelClick(e) {
+                const appointmentId = e.currentTarget.dataset.id;
+                modalConfirmBtn.dataset.id = appointmentId; // Zapisujemy ID w przycisku "Tak"
+                showModal(true);
+            }
+
+            // === INICJALIZACJA ===
+            
+            // Nasłuchiwanie na wysłanie formularza
+            addForm.addEventListener('submit', handleAddAppointment);
+
+            // Przyciski modala
+            modalCancelBtn.addEventListener('click', () => showModal(false));
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) { // Zamykanie po kliknięciu tła
+                    showModal(false);
+                }
+            });
+
+            // Potwierdzenie usunięcia
+            modalConfirmBtn.addEventListener('click', () => {
+                const appointmentId = modalConfirmBtn.dataset.id;
+                if (appointmentId) {
+                    performDeletion(appointmentId);
+                    showModal(false); // Ukryj modal po kliknięciu
+                    modalConfirmBtn.dataset.id = ''; 
+                }
+            });
+
+            // Pobranie danych przy starcie
+            fetchAppointments();
+        });
+    </script>
+
+</body>
+</html>
